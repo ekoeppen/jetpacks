@@ -59,6 +59,60 @@ type SwapValue struct {
 	RawData  []byte
 }
 
+func hexByteToByte(data byte) byte {
+	if data >= 97 {
+		return data - 97 + 10
+	} else if data >= 65 {
+		return data - 65 + 10
+	} else {
+		return data - 48
+	}
+}
+
+func hexBytesToByte(data []byte) byte {
+	return hexByteToByte(data[0])*16 + hexByteToByte(data[1])
+}
+
+func hexBytesToSwapFunction(data []byte) SwapFunction {
+	if data[0] == 48 {
+		if data[1] == 48 {
+			return STATUS
+		} else if data[1] == 49 {
+			return QUERY
+		} else if data[1] == 50 {
+			return COMMAND
+		}
+	}
+	return STATUS
+}
+
+// Decode a SWAP packed from raw packet data
+func (p *SwapPacket) Decode(data []byte) error {
+	minLength := 1+2*2+1+7*2
+	l := len(data)
+	if l >= minLength {
+		p.RSSI = hexBytesToByte(data[1:3])
+		p.LQI = hexBytesToByte(data[3:5])
+		p.Source = hexBytesToByte(data[6:8])
+		p.Destination = hexBytesToByte(data[8:10])
+		p.Hops = hexByteToByte(data[10])
+		p.Security = hexByteToByte(data[11])
+		p.Nonce = hexBytesToByte(data[12:14])
+		p.Function = hexBytesToSwapFunction(data[14:16])
+		p.RegisterAddress = hexBytesToByte(data[16:18])
+		p.RegisterID = hexBytesToByte(data[18:20])
+		if l > minLength {
+			p.Payload = make([]byte, (l-minLength)/2, (l-minLength)/2)
+			for i, _ := range p.Payload {
+				p.Payload[i] = hexBytesToByte(data[minLength+i*2 : minLength+(i+1)*2])
+			}
+		}
+		return nil
+	}
+	return errors.New("Invalid SWAP data")
+}
+
+// Copy the value to a byte array representation
 func (value *SwapValue) SetRawData(data []byte) {
 	var l byte
 	switch value.Type {
@@ -78,6 +132,7 @@ func (value *SwapValue) SetRawData(data []byte) {
 	value.RawData = data[value.Position : value.Position+l]
 }
 
+// Return the value as an integer, return an error if the value is not of integer type
 func (value *SwapValue) AsInt() (n int64, err error) {
 	switch value.Type {
 	case INT8:
@@ -118,6 +173,7 @@ type SwapMote struct {
 	Values    []SwapValue
 }
 
+// Update SWAP values of a mote from a SWAP packet and return the values as a mapping of value names to value as strings
 func (mote *SwapMote) UpdateValues(p *SwapPacket) map[string]string {
 	values := make(map[string]string)
 	for _, value := range mote.Values {
