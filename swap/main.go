@@ -38,18 +38,21 @@ func main() {
 	// command line parameters
 	flag.StringVar(&subscribeFrom, "sub", subscribeFrom, "Broker for subscription")
 	flag.StringVar(&topic, "topic", "logger", "Topic for subscription")
-	flag.StringVar(&publishTo, "pub", subscribeFrom, "Broker for publishing")
+	flag.StringVar(&publishTo, "pub", "", "Broker for publishing")
 	flag.StringVar(&moteDir, "motes", "swapmotes", "Folder with mote definitions")
 	flag.StringVar(&cert, "cert", "client.crt", "Client certificate file for TLS connections")
 	flag.StringVar(&key, "key", "client.key", "Client key file for TLS connections")
 	flag.StringVar(&ca, "ca", "ca.crt", "Certificate Authority file for broker certification")
 	flag.Parse()
 
+	if publishTo == "" {
+		publishTo = subscribeFrom
+	}
 	// normal pack startup begins here
 	log.Printf("SWAP pack starting...\n    Listening for topic %s, mote directory at %s\n", topic, moteDir)
 	log.Printf("    Subscribing from %s, Publishing to %s\n", subscribeFrom, publishTo)
 	if strings.HasPrefix(subscribeFrom, "tcps") || strings.HasPrefix(publishTo, "tcps") {
-		log.Printf("    Using TLS with certificate %s and key %s\n", cert, key)
+		log.Printf("    Using TLS with certificate %s, key %s and CA %s\n", cert, key, ca)
 	}
 
 	readMotes(moteDir)

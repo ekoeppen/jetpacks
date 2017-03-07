@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"strings"
+	"net/url"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -32,7 +32,11 @@ func (c *Client) ConnectToHub(clientName, port string, retain bool, cert, key, c
 	options.SetKeepAlive(10)
 	options.SetBinaryWill("jet/"+c.clientID, nil, 1, retain)
 
-	if strings.HasPrefix(port, "tcps") {
+	url, err := url.Parse(port)
+	if err != nil {
+		log.Fatalf("Malformed URL: %v\n", err)
+	}
+	if url.Scheme == "tcps" {
 		cert, err := tls.LoadX509KeyPair(cert, key)
 		if err != nil {
 			log.Fatalf("Failed to load client cert: %v\n", err)
@@ -44,7 +48,7 @@ func (c *Client) ConnectToHub(clientName, port string, retain bool, cert, key, c
 		caCertPool := x509.NewCertPool()
 		caCertPool.AppendCertsFromPEM(caCert)
 		tlsConfig := &tls.Config{
-			ServerName:   "40hz.org",
+			ServerName:   url.Hostname(),
 			Certificates: []tls.Certificate{cert},
 			RootCAs:      caCertPool,
 		}
