@@ -100,12 +100,12 @@ func sendToHub(topic, value string) {
 func handlePacket(p *swap.SwapPacket) {
 	for _, mote := range motes {
 		if mote.Address == p.RegisterAddress {
-			for i, v := range mote.UpdateValues(p) {
-				sendToHub("SWAP/"+i, v)
-			}
 			sendToHub("SWAP/"+mote.Location+"/Timestamp", strconv.FormatInt(time.Now().UTC().Unix(), 10))
 			sendToHub("SWAP/"+mote.Location+"/CC_RSSI", strconv.FormatInt(int64(p.RSSI), 10))
 			sendToHub("SWAP/"+mote.Location+"/LQI", strconv.FormatInt(int64(p.LQI), 10))
+			for i, v := range mote.UpdateValues(p) {
+				sendToHub("SWAP/"+i, v)
+			}
 		}
 	}
 }
