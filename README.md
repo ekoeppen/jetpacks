@@ -1,2 +1,2 @@
-# jetpacks
-Packs for the JeeLabs Jet Hub
+# moter
+Libraries and clients for SWAP based sensor networks using MQTT as the communication infrastructure
